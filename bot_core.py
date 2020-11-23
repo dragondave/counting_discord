@@ -41,6 +41,7 @@ replacements = {
         '\u221a': 'sqrt',  # root,
         # '\u221b' # cuberoot
         # '\u221c' # fourthroot
+        '\U0001f51f': '(10)', # keycap 10
         '\u2070': '**0', # super 0
         '\u00b0': '**0', # degree
         '\u00ba': '**0', # super o
@@ -59,6 +60,7 @@ replacements = {
         'π': '(pi)', # pi
         '÷': '/', # division
         '×': '*',
+        'X': '*',
         '¼': '(1/4)',
         '½': '(1/2)',
         '¾': '(3/4)',
@@ -84,6 +86,15 @@ memes = {
         '^7.*6.*5.*4.*3.*2.*1$': 7,
         '^8.*7.*6.*5.*4.*3.*2.*1$': 8,
         '^9.*8.*7.*6.*5.*4.*3.*2.*1$': 9,
+        '^[^A-Za-z02-9]+$': 1,
+        '^[^A-Za-z0-13-9]+$': 2,
+        '^[^A-Za-z0-24-9]+$': 3,
+        '^[^A-Za-z0-35-9]+$': 4,
+        '^[^A-Za-z0-46-9]+$': 5,
+        '^[^A-Za-z0-57-9]+$': 6,
+        '^[^A-Za-z0-68-9]+$': 7,
+        '^[^A-Za-z0-79]+$': 8,
+        '^[^A-Za-z0-8]+$': 9,
         }
 
 
@@ -146,11 +157,14 @@ def meme_search(text):
             return number
     return False
 
-def do_maths(text, integer=True):
+def replaced(text):
     t = text
     for key, value in replacements.items():
         t=t.replace(key, value)
-    print (t)
+    return (t)
+
+def do_maths(text, integer=True):
+    t = replaced(text)
     try:
         if integer:
             return int(complex(numexpr.evaluate(t)).real)
@@ -191,7 +205,7 @@ async def counting(message):
     if message_number == Counter.last_number + 1:
         Counter.last_number += 1
         await message.add_reaction(emoji=EMOJI_TICK)
-        meme = meme_search(message.content)
+        meme = meme_search(replaced(message.content))
         if meme:
             await message.add_reaction(emoji=emoji[meme])
     else:
