@@ -1,17 +1,45 @@
 import discord
 import logging
 import numexpr
+import sys
 from secrets import discord_bot_token
-
-def no():
-    print ("yes")
 
 class Counter(object):
     last_number = 0
 
+class NotUnderstoodError(Exception):
+    "For some reason we didn't understand the input as a number"
+    pass
+
+class WrongError(Exception):
+    "We understood the answer. It's wrong."
+    pass
+
 EMOJI_TICK = '\u2705'
 EMOJI_CROSS = '\u274c'
 EMOJI_INTERROBANG = '\u2049'
+
+replacements = {
+        '\u221e': '(1/0)', # infinity,
+        '\u221a': 'sqrt',  # root,
+        # '\u221b' # cuberoot
+        # '\u221c' # fourthroot
+        '%': '/100',
+        '\u2070': '**0', # super 0
+        '\u00b9': '**1', # super 1
+        '\u00b2': '**2', # super 2
+        '\u00b3': '**3', # super 2
+        '\u2074': '**4', # super 2
+        '\u2075': '**5', # super 2
+        '\u2076': '**6', # super 2
+        '\u2077': '**7', # super 2
+        '\u2078': '**8', # super 2
+        '\u2079': '**9', # super 2
+        '\u2071': '**i', # super 2
+        'α': '(1/137.03599908)', # alpha, the fine structure constant
+        'π': '(pi)', # pi
+}
+
 
 e = 2.718281828459
 pi = 3.14159265359
@@ -65,6 +93,23 @@ id=#
 channel.id=#, .name=$, .position=n, .nsfw=b, .news=b, .catgegory_id=?
 author.id=#, .name=$, .discriminator=$, .bot=b, .nick=b
 """
+    
+
+def do_maths(text):
+    t = text
+    for key, value in replacements.items():
+        t=t.replace(key, value)
+    print (t)
+    try:
+        return int(complex(numexpr.evaluate(t)).real)
+    except KeyError as e:
+        raise NotUnderstoodError("I don't know a variable {}.".format(str(e)))
+    except ZeroDivisionError:
+        raise WrongError("Please don't divide by zero, it hurts my brain..")
+    except OverflowError:
+        raise WrongError("Wow, that's a big number. Too big.")
+    except ValueError as e: # occurs if strings?
+        raise NotUnderstoodError("... was that a string?".format(str(e)))
 
 def display_message(message):
     return(f"{message.author.name} on {message.channel.name}: {message.content}")
@@ -72,8 +117,7 @@ def display_message(message):
 async def counting(message):
     print ("Counting Candidate seen:", display_message(message))
     try:
-        # message_number = int(numexpr.evaluate(message.content))
-        message_number = int(complex(numexpr.evaluate(message.content)).real)
+        message_number = do_maths(message.content)
     except Exception as e:
         await message.add_reaction(emoji=EMOJI_INTERROBANG)
         return
@@ -110,4 +154,15 @@ async def on_message(message):
     if message.content.startswith('$hello'):
         await message.channel.send('Hello!')
 
-client.run(discord_bot_token)
+if sys.argv[1] == 'console':
+    while True:
+        x = input()
+        try:
+            print (do_maths(x))
+        except Exception as e:
+            print (e)
+            print (type(e))
+else:
+    client.run(discord_bot_token)
+
+
