@@ -64,6 +64,8 @@ replacements = {
         '¼': '(1/4)',
         '½': '(1/2)',
         '¾': '(3/4)',
+        'nice': 70,
+        'blaze it': 421,
 
         '\uFE0F': '', # emoji presentation
         '\u20E3': '', # combining keycap
@@ -200,7 +202,6 @@ async def counting(message):
         await message.add_reaction(emoji=EMOJI_LADYBIRD)
         await message.channel.send("{}: {}".format(type(e), str(e)))
         return
-
 
     if message_number == Counter.last_number + 1:
         Counter.last_number += 1
