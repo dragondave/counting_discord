@@ -3,6 +3,7 @@ import logging
 import numexpr
 import sys
 import re
+import traceback
 from discord.utils import get
 from secrets import discord_bot_token
 
@@ -37,6 +38,9 @@ emoji = {
         }
 
 replacements = {
+        '\u0f33': '(-0.5)', # TIBETAN DIGIT HALF ZERO
+        '\u5146': '(1e12)',
+        '\U00016B61': '(1e12)',
         '\u221e': '(1/0)', # infinity,
         '\u221a': 'sqrt',  # root,
         # '\u221b' # cuberoot
@@ -64,8 +68,8 @@ replacements = {
         '¼': '(1/4)',
         '½': '(1/2)',
         '¾': '(3/4)',
-        'nice': 70,
-        'blaze it': 421,
+        'nice': '70',
+        'blaze it': '421',
 
         '\uFE0F': '', # emoji presentation
         '\u20E3': '', # combining keycap
@@ -201,6 +205,7 @@ async def counting(message):
     except Exception as e:
         await message.add_reaction(emoji=EMOJI_LADYBIRD)
         await message.channel.send("{}: {}".format(type(e), str(e)))
+        await message.channel.send("```{}```".format(traceback.format_exc()))
         return
 
     if message_number == Counter.last_number + 1:
@@ -212,7 +217,7 @@ async def counting(message):
     else:
         await message.add_reaction(emoji=EMOJI_CROSS)
         try:
-            exact = do_maths(message.content)
+            exact = do_maths(message.content, False)
         except Exception:
             pass
         await message.channel.send("I calculated that to be {} ({}), not {}".format(exact, message_number, Counter.last_number+1))
