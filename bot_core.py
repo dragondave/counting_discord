@@ -4,8 +4,15 @@ import numexpr
 import sys
 import re
 import traceback
+import asyncio
 from discord.utils import get
-from secrets import discord_bot_token
+from secrets import discord_bot_token, cheat_code
+
+from poke import pokemon
+from funct import roman
+
+plugins = [pokemon, roman]
+
 
 class Counter(object):
     last_number = 0
@@ -22,6 +29,9 @@ EMOJI_TICK = '\u2705'
 EMOJI_CROSS = '\u274c'
 EMOJI_INTERROBANG = '\u2049'
 EMOJI_LADYBIRD = '\U0001f41e'
+EMOJI_DRAGON = '\U0001F432'
+last_poster = None
+cheat_mode = False
 
 emoji = {
         69: '\u264B', # cancer
@@ -170,7 +180,15 @@ def replaced(text):
     return (t)
 
 def do_maths(text, integer=True):
-    t = replaced(text)
+    fragments = text.split(" ")
+    for i, word in enumerate(fragments):
+        for plugin in plugins:
+             value = plugin(word)
+             if value is not False:
+                 print ("replaced {} with {}".format(word, value))
+                 fragments[i] = str(value)
+    
+    t = replaced(' '.join(fragments))
     try:
         if integer:
             return int(complex(numexpr.evaluate(t)).real)
@@ -190,8 +208,18 @@ def do_maths(text, integer=True):
 def display_message(message):
     return(f"{message.author.name} on {message.channel.name}: {message.content}")
 
+async def delayed(f, seconds=2, *args, **kwargs):
+    await asyncio.sleep(seconds)
+    await f(*args, **kwargs)
+
 async def counting(message):
+    global cheat_mode, last_poster
     print ("Counting Candidate seen:", display_message(message))
+    if message.content == cheat_code:
+        await message.add_reaction(emoji=EMOJI_DRAGON)
+        cheat_mode = not cheat_mode
+        await message.delete()
+        return
     try:
         message_number = do_maths(message.content)
     except NotUnderstoodError as e:
@@ -202,11 +230,22 @@ async def counting(message):
         await message.add_reaction(emoji=EMOJI_CROSS)
         await message.channel.send(str(e))
         Counter.last_number = 0
+        last_poster = None
+        return
     except Exception as e:
         await message.add_reaction(emoji=EMOJI_LADYBIRD)
         await message.channel.send("{}: {}".format(type(e), str(e)))
         await message.channel.send("```{}```".format(traceback.format_exc()))
         return
+
+    if not cheat_mode and last_poster == message.author:
+        await message.add_reaction(emoji=EMOJI_INTERROBANG)
+        m = await message.channel.send("It isn't your turn!")
+        await delayed(message.delete)
+        await delayed(m.delete)
+        return
+    else:
+        last_poster = message.author
 
     if message_number == Counter.last_number + 1:
         Counter.last_number += 1
@@ -219,8 +258,8 @@ async def counting(message):
         try:
             exact = do_maths(message.content, False)
         except Exception:
-            pass
-        await message.channel.send("I calculated that to be {} ({}), not {}".format(exact, message_number, Counter.last_number+1))
+            exact = 'MISSING_NO'
+        await message.channel.send("I calculated that to be {}, not {}".format(exact, Counter.last_number+1))
         Counter.last_number = 0
 
 
